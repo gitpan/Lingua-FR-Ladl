@@ -554,10 +554,10 @@ This document describes Lingua::FR::Ladl::Table version 0.0.1
     my $table = Lingua::FR::Ladl::Table->new({ name => $table_ref->{name} });
 
     # load table data from an excel file:
-    $table->load({ format => 'xls', file => '1.xls' }); 
+    $table->load({ format => 'xls', file => 't/1.xls' }); 
 
     # load table data from a gnumeric xml file:
-    $table->load({ format => 'xml', file => '1.xml' }); 
+    $table->load({ format => 'xml', file => 't/1.xml' }); 
 
     $table->set_name('1'); 
     my $name = $table->get_name();
