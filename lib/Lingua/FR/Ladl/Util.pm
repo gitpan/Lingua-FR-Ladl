@@ -1,85 +1,24 @@
-package Lingua::FR::Ladl::Graph;
-use base qw( Graph );
+package Lingua::FR::Ladl::Util;
 
 use strict; 
 use warnings;
 use Carp;
+use Readonly;
 
 use version; our $VERSION = qv('0.0.1');
 
-use Readonly;
+# List of currently used suffixes
+Readonly my @suffix_list => qw(.xml .xls .dot);
 
-use Lingua::FR::Ladl::Exceptions;
-use Lingua::FR::Ladl::Parametrizer;
-use Lingua::FR::Ladl::Util;
+sub _Name::from_file_name {
+  my ($file_name) = @_;
+  # inferre the name of the object
+  # from the basename of the file
+  use File::Basename;
+  my ($name, $directories, $suffix) = fileparse($file_name, @suffix_list);
 
-use Class::Std;
-
-{
-
-  Readonly my %is_implemented_format => ( dot => \&_load_dot, );
-
-  my %name_of : ATTR( :default('none') :name<name> );
-  my %graph_of;
-  my %parameters_of : ATTR( :set<parameters> :get<parameters> ); # customization parameters
-  
-  
-  ############# Utility subroutines #################################################################
-
-  sub _load_dot {
-    my ($file_name) = @_;
-
-    use Graph::Reader::Dot;
-    my $reader = Graph::Reader::Dot->new();
-    $Graph::Reader::Dot::UseNodeAttr = 'yes';
-    $Graph::Reader::Dot::UseEdgeAttr = 'yes';
-
-    my $graph_ref = $reader->read_graph($file_name);
-
-=for Error handling:
-     Graph::Reader::Dot returns 0 and a warning on STDERR if it can't read the file
-     I think throwing an exception is better.
-
-=cut
-    unless ($graph_ref) {
-      croak "Error loading $file_name via Graph::Reader::Dot\n";
-    };
-
-    return 
-  };
-
-  sub BUILD {
-    my ($self, $id, $arg_ref) = @_;
-
-    # parametrize with new default parametrizer
-    my $param = Lingua::FR::Ladl::Parametrizer->new();
-    $parameters_of{$id} = $param;
-  };
-
-  ############# Interface subroutines ##############################################################
-
-  sub load {
-    my ($self, $arg_ref) = @_;
-    my $format = $arg_ref->{format};
-    my $file_name = $arg_ref->{file};
-    my $id = ident $self;
-
-    unless ($is_implemented_format{$format}) {
-      croak 'Format must be one of '.join(', ', keys %is_implemented_format).", not $format\n";
-    }
-
-    my $graph_ref = $is_implemented_format{$format}->($file_name);
-
-    
-    # set a default graph name, the basename of the file used for loading
-    $self->set_name(_Name::from_file_name($file_name));
-
-    $graph_of{$id} = $graph_ref;
-
-    return;
-  }
-
-};
+  return $name;
+}
 
 1;
 __END__
@@ -87,15 +26,15 @@ __END__
 
 =head1 NAME
 
-Graph - Perl extension for blah blah blah
+Lingua::FR::Ladl::Util - Perl extension for blah blah blah
 
 =head1 VERSION
 
-This document describes Graph version 0.0.1
+This document describes Lingua::FR::Ladl::Util version 0.0.1
 
 =head1 SYNOPSIS
 
-   use Graph;
+   use Lingua::FR::Ladl::Util;
    blah blah blah
 
 =for author to fill in:
@@ -106,7 +45,7 @@ This document describes Graph version 0.0.1
 
 =head1 DESCRIPTION
 
-Stub documentation for Graph, 
+Stub documentation for Lingua::FR::Ladl::Util, 
 created by perlnow.el using template.el.
 
 
@@ -122,19 +61,6 @@ created by perlnow.el using template.el.
     interface. These normally consist of either subroutines that may be
     exported, or methods that may be called on objects belonging to the
     classes provided by the module.
-
-=over
-
-=item load
-
-  $lgraph->load( {format => 'dot', file=>'file_name'} )
-
-Load a Ladl graph from a file in the dot format. Currently, this
-is the only supported graph input format.
-
-
-=back
-
 
 
 =head1 DIAGNOSTICS

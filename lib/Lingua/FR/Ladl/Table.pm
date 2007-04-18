@@ -13,6 +13,7 @@ use version; our $VERSION = qv('0.0.1');
 
 use Lingua::FR::Ladl::Exceptions;
 use Lingua::FR::Ladl::Parametrizer;
+use Lingua::FR::Ladl::Util;
 
 use Class::Std;
 
@@ -33,16 +34,6 @@ use Class::Std;
 
   ############# Utility subroutines #################################################################
   
-  sub _table_name {
-    my ($file_name) = @_;
-
-    use File::Basename;
-    my $dirname = dirname($file_name);
-    my $name = ($file_name =~ s{^$dirname}{});
-
-    return $name;
-  }
-
   sub _find_out_verbCol {
     my ($id) = @_;
 
@@ -176,7 +167,7 @@ use Class::Std;
 
 =cut
 
-    $self->set_name(_table_name($file_name));
+    $self->set_name(_Name::from_file_name($file_name));
 
     ($table_of{$id}, $maxRow_of{$id}, $maxCol_of{$id}) = $is_implemented_format{$format}->($file_name);
     
