@@ -2,14 +2,16 @@ package Lingua::FR::Ladl::Table;
 
 use warnings;
 use strict;
+use English;
+
+use version; our $VERSION = qv('0.0.1');
+
 use Carp;
-#use Data::Dumper;
 
 use Readonly;
 use List::Util qw(max first);
 use List::MoreUtils qw(all);
 
-use version; our $VERSION = qv('0.0.1');
 
 use Lingua::FR::Ladl::Exceptions;
 use Lingua::FR::Ladl::Parametrizer;
@@ -90,7 +92,11 @@ use Class::Std;
 
     my $table_ref = {};
     
-    use Spreadsheet::ParseExcel;
+    eval { use Spreadsheet::ParseExcel; };
+    if ($EVAL_ERROR) {
+      croak "Can't load table data from excel file $file_name: Spreadsheed::ParseExcel not installed";
+    }
+    
     my $excel = Spreadsheet::ParseExcel::Workbook->Parse($file_name) or
       croak "Error parsing $file_name: Spreadsheet::ParseExcel returned undef\n";
     my $sheet = $excel->{Worksheet}->[0];
@@ -116,7 +122,12 @@ use Class::Std;
 
     my $table_ref = {};
 
-    use XML::LibXML;
+    eval { use XML::LibXML; };
+    if ($EVAL_ERROR) {
+      croak "Can't load table data from xml file $file_name: XML::LibXML not installed\n";
+    }
+
+    
     my $parser = XML::LibXML->new();
     $parser->keep_blanks(0);
     my $table_doc = $parser->parse_file($file_name);

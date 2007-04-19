@@ -9,6 +9,9 @@ use Exception::Class (
                       'X::NoTableData' => {
                                            fields => [ 'table' ],
                                           },
+                      'X::NoGraphData' => {
+                                           fields => [ 'graph' ],
+                                          },
                      );
 
 sub X::NoTableData::full_message {
@@ -19,6 +22,13 @@ sub X::NoTableData::full_message {
   return $msg.'Need table data for "'.$self->table()->get_name().q(").qq(, maybe you should call the load method first?\n);
 };
 
+sub X::NoGraphData::full_message {
+  my ($self) = @_;
+
+  my $msg = $self->message();
+  
+  return $msg.'Graph not initialized: "'.$self->graph()->get_name().q(").qq(, maybe you should call the load method first?\n);
+};
 
 
 

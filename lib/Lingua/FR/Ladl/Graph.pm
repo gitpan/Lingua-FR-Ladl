@@ -3,9 +3,10 @@ use base qw( Graph );
 
 use strict; 
 use warnings;
+use English;
 use Carp;
 
-use version; our $VERSION = qv('0.0.1');
+use version; our $VERSION = (q$Revision$) =~ /(\d+)/g;
 
 use Readonly;
 
@@ -20,9 +21,10 @@ use Class::Std;
   Readonly my %is_implemented_format => ( dot => \&_load_dot, );
 
   my %name_of : ATTR( :default('none') :name<name> );
-  my %graph_of;
   my %parameters_of : ATTR( :set<parameters> :get<parameters> ); # customization parameters
-  
+
+  my %graph_of : ATTR;
+  my %frame_vertices_of : ATTR;
   
   ############# Utility subroutines #################################################################
 
@@ -45,12 +47,16 @@ use Class::Std;
       croak "Error loading $file_name via Graph::Reader::Dot\n";
     };
 
-    return 
+    return $graph_ref;
   };
 
   sub BUILD {
     my ($self, $id, $arg_ref) = @_;
 
+    my $class = ref($self);
+    
+    $graph_of{$id} = $class->SUPER::new();
+    
     # parametrize with new default parametrizer
     my $param = Lingua::FR::Ladl::Parametrizer->new();
     $parameters_of{$id} = $param;
@@ -76,9 +82,90 @@ use Class::Std;
 
     $graph_of{$id} = $graph_ref;
 
-    return;
+    return $self;
+  };
+
+=for Discussion:
+  I don't think it's possible to ultimately verify that this graph is a ladl graph
+  so all we can do is to check whether is violates some basic properties or not.
+  Some of these properties are:
+  -must be a DAG
+  -root vertices are boxes
+  -has no isolated vertices
+
+=cut
+  
+  sub is_plausible {
+    my ($self) = @_;
+    my $id = ident $self;
+
+    unless ($graph_of{$id}) {
+      croak "Graph is not initialised, maybe you should first call `load'?" 
+    };
+    
+    my $g = $graph_of{$id};
+
+    
+    unless ( $g->is_dag() ) {
+      carp "Graph is no DAG\n";
+      return 0;
+    };
+
+    if ( grep { $g->get_vertex_attribute($_,'shape') ne 'record' } $g->source_vertices() ) {
+      carp "Some source vertices are not record shaped\n";
+      return 0;
+    };
+
+    if ( $g->isolated_vertices() ) {
+      carp "Has isolated vertices\n";
+      return 0;
+    }
+    
+    return 1;
   }
 
+  #############################################
+  # Frame nodes are the source vertices of the graph
+  #############################################
+  sub get_frame_vertices_for {
+    my ($self) = @_;
+    my $id = ident $self;
+
+    use Contextual::Return;
+    if ($frame_vertices_of{$id}) {
+      my $array_ref = $frame_vertices_of{$id};
+      return (
+              LIST          { @{ $array_ref }                          }
+              SCALAR        { scalar( @{ $array_ref } )                }
+              ARRAYREF      { $array_ref                               }
+              STR           { join(' ', @{ $array_ref } )              }
+              VOID          { print join(' ', @{ $array_ref } ).qq(\n) }
+              DEFAULT       { croak qq(Bad context!\n)                 }
+             );
+    };
+
+    my $g = $graph_of{$id} or X::NoGraphData->throw(
+                                                    message => qq(Couldn't get frame vertices),
+                                                    graph => $self,
+                                                   );
+    my @frame_vertices = $g->source_vertices();
+    if (@frame_vertices) {
+      $frame_vertices_of{$id} = \@frame_vertices;
+    } else {
+      carp qq(Warning: no frame vertices found\n);
+    }
+    
+    my $array_ref = \@frame_vertices;
+    return (
+            LIST          { @{ $array_ref }                          }
+            SCALAR        { scalar( @{ $array_ref } )                }
+            ARRAYREF      { $array_ref                               }
+            STR           { join(' ', @{ $array_ref } )              }
+            VOID          { print join(' ', @{ $array_ref } ).qq(\n) }
+            DEFAULT       { croak qq(Bad context!\n)                 }
+           );
+  }
+  
 };
 
 1;
@@ -132,6 +219,42 @@ created by perlnow.el using template.el.
 Load a Ladl graph from a file in the dot format. Currently, this
 is the only supported graph input format.
 
+=item is_plausible
+
+ $lgraph->is_plausible()
+
+Checks whether it's plausible that this graph may be a Ladl graph.
+
+NOTE:
+
+It's probably not possible to ultimately check if a given graph may be
+a Ladl graph. We only verify it doesn't violate some basic properties,
+which as of now are:
+
+=over
+
+=item is a directed, acyclic Graph (a DAG)
+
+=item the source vertices are boxes, i.e. their I<shape> attribute is I<record>.
+
+=item has no isolated vertices
+
+=back 
+
+=item get_frame_vertices_for
+
+Returns the frame vertices. Frame vertices of a Ladl graph are the source vertices.
+Called in 
+
+list context returns the list of frame vertices,
+
+scalar context returns the number of elements of the list,
+
+string context returns the concatenation of the vertices,
+
+arrayref context return a reference to the list of frame vertices,
+
+void context prints the stringified list.
 
 =back
 
